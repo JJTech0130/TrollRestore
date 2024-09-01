@@ -2,9 +2,10 @@ import sys
 from pathlib import Path
 
 import click
+import packaging.version
 import requests
 from pymobiledevice3.cli.cli_common import Command
-from pymobiledevice3.exceptions import PyMobileDevice3Exception
+from pymobiledevice3.exceptions import NoDeviceConnectedError, PyMobileDevice3Exception
 from pymobiledevice3.lockdown_service_provider import LockdownServiceProvider
 from pymobiledevice3.services.diagnostics import DiagnosticsService
 from pymobiledevice3.services.installation_proxy import InstallationProxyService
@@ -15,6 +16,16 @@ from sparserestore import backup, perform_restore
 @click.command(cls=Command)
 @click.pass_context
 def cli(ctx, service_provider: LockdownServiceProvider) -> None:
+    device_version = packaging.version.parse(service_provider.product_version)
+    if (
+        device_version < packaging.version.parse("15.0")
+        or device_version > packaging.version.parse("17.0")
+        or device_version > packaging.version.parse("16.7")
+        and device_version < packaging.version.parse("17.0")
+    ):
+        click.secho("This tool is only compatible with iOS 15.0 - 16.7 and 17.0.", fg="red")
+        return
+
     app = click.prompt(
         """
 Please specify the removable system app you want to replace with TrollStore Helper.
@@ -42,7 +53,7 @@ Enter the app name"""
         return
     elif Path("/private/var/containers/Bundle/Application") not in app_path.parents:
         click.secho(f"'{app}' is not a removable system app!", fg="red")
-        click.secho(f"Please choose a removable system app. These will be Apple-made apps that can be deleted and re-downloaded.", fg="red")
+        click.secho("Please choose a removable system app. These will be Apple-made apps that can be deleted and re-downloaded.", fg="red")
         return
 
     app_uuid = app_path.parent.name
@@ -85,8 +96,8 @@ Enter the app name"""
         perform_restore(back, reboot=False)
     except PyMobileDevice3Exception as e:
         if "Find My" in str(e):
-            click.secho(f"Find My must be disabled in order to use this tool.", fg="red")
-            click.secho(f"Disable Find My from Settings (Settings -> [Your Name] -> Find My) and then try again.", fg="red")
+            click.secho("Find My must be disabled in order to use this tool.", fg="red")
+            click.secho("Disable Find My from Settings (Settings -> [Your Name] -> Find My) and then try again.", fg="red")
             sys.exit(1)
         elif "crash_on_purpose" not in str(e):
             raise e
@@ -96,14 +107,22 @@ Enter the app name"""
     with DiagnosticsService(service_provider) as service_provider:
         service_provider.restart()
 
-    click.secho(f"Make sure you turn Find My iPhone back on if you use it after rebooting.", fg="green")
-    click.secho(f"Make sure to install a proper persistence helper into the app you chose after installing TrollStore!\n", fg="green")
+    click.secho("Make sure you turn Find My iPhone back on if you use it after rebooting.", fg="green")
+    click.secho("Make sure to install a proper persistence helper into the app you chose after installing TrollStore!\n", fg="green")
 
 
-if __name__ == "__main__":
+def main():
     try:
         cli(standalone_mode=False)
+    except NoDeviceConnectedError:
+        click.secho("No device connected!", fg="red")
+        click.secho("Please connect your device and try again.", fg="red")
+        sys.exit(1)
     except click.UsageError as e:
         click.secho(e.format_message(), fg="red")
         click.echo(cli.get_help(click.Context(cli)))
         raise SystemExit(2)
+
+
+if __name__ == "__main__":
+    main()
