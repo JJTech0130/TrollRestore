@@ -162,6 +162,8 @@ def main():
         click.secho(traceback.format_exc(), fg="red")
         exit(1)
 
+    exit(0)
+
 
 if __name__ == "__main__":
     main()
