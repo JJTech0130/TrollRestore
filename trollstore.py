@@ -1,4 +1,5 @@
 import sys
+import traceback
 from pathlib import Path
 
 import click
@@ -11,6 +12,13 @@ from pymobiledevice3.services.diagnostics import DiagnosticsService
 from pymobiledevice3.services.installation_proxy import InstallationProxyService
 
 from sparserestore import backup, perform_restore
+
+
+def exit(code=0):
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        input("Press Enter to exit...")
+
+    sys.exit(code)
 
 
 @click.command(cls=Command)
@@ -125,7 +133,7 @@ Enter the app name"""
         if "Find My" in str(e):
             click.secho("Find My must be disabled in order to use this tool.", fg="red")
             click.secho("Disable Find My from Settings (Settings -> [Your Name] -> Find My) and then try again.", fg="red")
-            sys.exit(1)
+            exit(1)
         elif "crash_on_purpose" not in str(e):
             raise e
 
@@ -144,11 +152,15 @@ def main():
     except NoDeviceConnectedError:
         click.secho("No device connected!", fg="red")
         click.secho("Please connect your device and try again.", fg="red")
-        sys.exit(1)
+        exit(1)
     except click.UsageError as e:
         click.secho(e.format_message(), fg="red")
         click.echo(cli.get_help(click.Context(cli)))
-        raise SystemExit(2)
+        exit(2)
+    except Exception:
+        click.secho("An error occurred!", fg="red")
+        click.secho(traceback.format_exc(), fg="red")
+        exit(1)
 
 
 if __name__ == "__main__":

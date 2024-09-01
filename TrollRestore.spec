@@ -1,6 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
+from pathlib import Path
 import site
 import platform
+import pytun_pmd3
 from PyInstaller.utils.hooks import copy_metadata
 
 site_packages_path = site.getsitepackages()[0]
@@ -14,9 +16,9 @@ block_cipher = None
 # if windows
 binaries = []
 if platform.system() == 'Windows':
-    binaries += [(f"{site_packages_path}/Lib/site-packages/pytun_pmd3/wintun/*", "pytun_pmd3/wintun/bin")]
+    binaries += [(f"{Path(pytun_pmd3.__file__).parent}/wintun/*", "pytun_pmd3/wintun/bin")]
 else:
-    binaries += [(f"{site_packages_path}/pytun_pmd3", "pytun_pmd3")]
+    binaries += [(f"{Path(pytun_pmd3.__file__).parent}/pytun_pmd3", "pytun_pmd3")]
 
 a = Analysis(
     ['trollstore.py'],
