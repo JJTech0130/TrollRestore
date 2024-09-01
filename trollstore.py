@@ -1,3 +1,4 @@
+import platform
 import sys
 import traceback
 from pathlib import Path
@@ -15,7 +16,7 @@ from sparserestore import backup, perform_restore
 
 
 def exit(code=0):
-    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    if platform.system() == "Windows" and getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         input("Press Enter to exit...")
 
     sys.exit(code)
