@@ -2,11 +2,11 @@ import sys
 from pathlib import Path
 
 import click
-import packaging.version
 import requests
+from packaging.version import parse as parse_version
 from pymobiledevice3.cli.cli_common import Command
 from pymobiledevice3.exceptions import NoDeviceConnectedError, PyMobileDevice3Exception
-from pymobiledevice3.lockdown_service_provider import LockdownServiceProvider
+from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services.diagnostics import DiagnosticsService
 from pymobiledevice3.services.installation_proxy import InstallationProxyService
 
@@ -15,15 +15,36 @@ from sparserestore import backup, perform_restore
 
 @click.command(cls=Command)
 @click.pass_context
-def cli(ctx, service_provider: LockdownServiceProvider) -> None:
-    device_version = packaging.version.parse(service_provider.product_version)
+def cli(ctx, service_provider: LockdownClient) -> None:
+    os_names = {
+        "iPhone": "iOS",
+        "iPad": "iPadOS",
+        "iPod": "iOS",
+        "AppleTV": "tvOS",
+        "Watch": "watchOS",
+        "AudioAccessory": "HomePod Software Version",
+        "RealityDevice": "visionOS",
+    }
+
+    device_class = service_provider.get_value(key="DeviceClass")
+    device_build = service_provider.get_value(key="BuildVersion")
+    device_version = parse_version(service_provider.product_version)
+
+    if not all([device_class, device_build, device_version]):
+        click.secho("Failed to get device information!", fg="red")
+        click.secho("Make sure your device is connected and try again.", fg="red")
+        return
+
+    os_name = (os_names[device_class] + " ") if device_class in os_names else ""
     if (
-        device_version < packaging.version.parse("15.0")
-        or device_version > packaging.version.parse("17.0")
-        or device_version > packaging.version.parse("16.7")
-        and device_version < packaging.version.parse("17.0")
+        device_version < parse_version("15.0")
+        or device_version > parse_version("17.0")
+        or parse_version("16.7") < device_version < parse_version("17.0")
+        or device_version == parse_version("16.7")
+        and device_build != "20H18"  # 16.7 RC
     ):
-        click.secho("This tool is only compatible with iOS 15.0 - 16.7 and 17.0.", fg="red")
+        click.secho(f"{os_name}{device_version} ({device_build}) is not supported.", fg="red")
+        click.secho("This tool is only compatible with iOS/iPadOS 15.0 - 16.7 RC and 17.0.", fg="red")
         return
 
     app = click.prompt(
@@ -58,7 +79,13 @@ Enter the app name"""
 
     app_uuid = app_path.parent.name
 
-    helper_contents = requests.get("https://github.com/opa334/TrollStore/releases/latest/download/PersistenceHelper_Embedded").content
+    try:
+        response = requests.get("https://github.com/opa334/TrollStore/releases/latest/download/PersistenceHelper_Embedded")
+        response.raise_for_status()
+        helper_contents = response.content
+    except Exception as e:
+        click.secho(f"Failed to download TrollStore Helper: {e}", fg="red")
+        return
     click.secho(f"Replacing {app} with TrollStore Helper. (UUID: {app_uuid})", fg="yellow")
 
     back = backup.Backup(
@@ -104,8 +131,8 @@ Enter the app name"""
 
     click.secho("Rebooting device", fg="green")
 
-    with DiagnosticsService(service_provider) as service_provider:
-        service_provider.restart()
+    with DiagnosticsService(service_provider) as diagnostics_service:
+        diagnostics_service.restart()
 
     click.secho("Make sure you turn Find My iPhone back on if you use it after rebooting.", fg="green")
     click.secho("Make sure to install a proper persistence helper into the app you chose after installing TrollStore!\n", fg="green")
