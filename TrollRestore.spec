@@ -1,4 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import copy_metadata
+
+datas = []
+datas += copy_metadata('readchar')
 
 
 block_cipher = None
@@ -8,8 +12,8 @@ a = Analysis(
     ['trollstore.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=datas,
+    hiddenimports=['zeroconf', 'zeroconf._utils.ipaddress', 'zeroconf._handlers.answers'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -28,7 +32,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='trollstore',
+    name='TrollRestore',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
