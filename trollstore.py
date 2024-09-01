@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 import click
 import requests
@@ -12,31 +13,43 @@ from sparserestore import backup, perform_restore
 
 
 @click.command(cls=Command)
-@click.argument('app')
 @click.pass_context
-def cli(ctx, service_provider: LockdownServiceProvider, app: str) -> None:
-    """
-    \b
-    Please specify the removable system app you want to replace with TrollStore Helper.
-    If you don't know which app to specify, specify the Tips app.
-    """
+def cli(ctx, service_provider: LockdownServiceProvider) -> None:
+    app = click.prompt(
+        """
+Please specify the removable system app you want to replace with TrollStore Helper.
+If you don't know which app to specify, specify the Tips app.
+
+Enter the app name"""
+    )
+
     if not app.endswith('.app'):
         app += '.app'
 
     apps_json = InstallationProxyService(service_provider).get_apps(application_type="System", calculate_sizes=False)
 
-    app_uuid = None
+    app_path = None
     for key, value in apps_json.items():
         if isinstance(value, dict) and "Path" in value:
-            if value["Path"].endswith(app):
-                app_uuid = value["Path"].split("/private/var/containers/Bundle/Application/")[-1].split("/")[0]
+            potential_path = Path(value["Path"])
+            if potential_path.name.lower() == app.lower():
+                app_path = potential_path
+                app = app_path.name
 
-    if app_uuid is None:
+    if not app_path:
         click.secho(f"Failed to find the removable system app '{app}'!", fg='red')
         click.secho(
             f"Make sure you typed the app name correctly, and that the system app '{app}' is installed to your device.",
             fg='red')
         return
+    elif Path("/private/var/containers/Bundle/Application") not in app_path.parents:
+        click.secho(f"'{app}' is not a removable system app!", fg='red')
+        click.secho(
+            f"Please choose a removable system app. These will be Apple-made apps that can be deleted and re-downloaded.",
+            fg='red')
+        return
+
+    app_uuid = app_path.parent.name
 
     helper_contents = requests.get(
         "https://github.com/opa334/TrollStore/releases/latest/download/PersistenceHelper_Embedded").content
