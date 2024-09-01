@@ -1,5 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
+import site
+import platform
 from PyInstaller.utils.hooks import copy_metadata
+
+site_packages_path = site.getsitepackages()[0]
 
 datas = []
 datas += copy_metadata('readchar')
@@ -7,11 +11,17 @@ datas += copy_metadata('readchar')
 
 block_cipher = None
 
+# if windows
+binaries = []
+if platform.system() == 'Windows':
+    binaries += [(f"{site_packages_path}/Lib/site-packages/pytun_pmd3/wintun/*", "pytun_pmd3/wintun/bin")]
+else:
+    binaries += [(f"{site_packages_path}/pytun_pmd3", "pytun_pmd3")]
 
 a = Analysis(
     ['trollstore.py'],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hiddenimports=['zeroconf', 'zeroconf._utils.ipaddress', 'zeroconf._handlers.answers'],
     hookspath=[],
