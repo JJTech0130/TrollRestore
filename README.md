@@ -17,12 +17,19 @@ python3 trollstore.py Tips
 # Post-installation
 TrollRestore does not restore a proper persistence helper - it simply replaces the main binary of a system app with an embedded TrollHelper. Thus, after installing TrollStore, it is recommended to install a persistence helper (you can use the same app used with TrollRestore as your persistence helper). Due to the nature of the installer (and its use of backups), the only way to restore your chosen app to it's original state is to delete it and re-install the app from the App Store.
 
-# Version Support
+# iOS Version Support
 As stated above, this installer supports iOS/iPadOS 15.0 - 16.7 RC (20H18) and 17.0. 
 
 Note: All 4 versions of iOS 17.0 are supported: 21A326/21A327/21A329/21A331
 
 It should theoretically support iOS 14, but during our testing, we experienced issues restoring the backup to an iOS 14 device. Therefore, using TrollStore on a device below iOS 15 has been disabled for the time being.
+
+# Computer Requirements
+To use the precompiled builds, you will either need:
+
+macOS: A Mac with macOS 12 (Montery) or higher. *macOS 11 may work but has not been tested.*
+
+Windows: A PC running Windows 10 or higher. iTunes must be installed.
 
 # Need Help?
 If you run into any issues during the installation, you can get support on the [r/Jailbreak Discord server](https://discord.gg/jb).
