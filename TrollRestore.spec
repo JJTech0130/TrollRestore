@@ -18,7 +18,7 @@ binaries = []
 if platform.system() == 'Windows':
     binaries += [(f"{Path(pytun_pmd3.__file__).parent}/wintun/*", "pytun_pmd3/wintun/bin")]
 else:
-    binaries += [(f"{Path(pytun_pmd3.__file__).parent}/pytun_pmd3", "pytun_pmd3")]
+    binaries += [(f"{Path(pytun_pmd3.__file__).parent}", "pytun_pmd3")]
 
 a = Analysis(
     ['trollstore.py'],
