@@ -27,7 +27,7 @@ It should theoretically support iOS 14, but during our testing, we experienced i
 # Computer Requirements
 To use the precompiled builds, you will either need:
 
-macOS: A Mac with macOS 11 (Big Sur) or higher. *macOS 11 may work but has not been tested.*
+macOS: A Mac with macOS 11 (Big Sur) or higher.
 
 Windows: A PC running Windows 10 or higher. iTunes must be installed.
 
