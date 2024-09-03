@@ -145,14 +145,14 @@ def on_replace_app():
 
 def main():
     root = tk.Tk()
-    root.title("App Replacer")
+    root.title("TrollRestore")
 
     tk.Label(root, text="Enter the app name to replace with TrollStore Helper:").pack(pady=10)
     global app_entry
     app_entry = tk.Entry(root, width=50)
     app_entry.pack(pady=5)
 
-    replace_button = tk.Button(root, text="Replace App", command=on_replace_app)
+    replace_button = tk.Button(root, text="Install TrollStore", command=on_replace_app)
     replace_button.pack(pady=20)
 
     root.mainloop()
