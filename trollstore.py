@@ -2,6 +2,8 @@ import platform
 import sys
 import traceback
 from pathlib import Path
+import subprocess
+import os
 
 import requests
 from packaging.version import parse as parse_version
@@ -143,6 +145,16 @@ def on_replace_app():
         exit_app(1)
 
 
+def install_libraries():
+    try:
+        subprocess.run([sys.executable, "install.py"], check=True)
+        messagebox.showinfo("Success", "Libraries installed successfully. The application will now restart.")
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
+    except subprocess.CalledProcessError:
+        messagebox.showerror("Error", "Failed to install libraries. Please try again.")
+
+
 def main():
     root = tk.Tk()
     root.title("TrollRestore")
@@ -153,7 +165,10 @@ def main():
     app_entry.pack(pady=5)
 
     replace_button = tk.Button(root, text="Install TrollStore", command=on_replace_app)
-    replace_button.pack(pady=20)
+    replace_button.pack(pady=10)
+
+    install_lib_button = tk.Button(root, text="Install lib", command=install_libraries)
+    install_lib_button.pack(pady=10)
 
     root.mainloop()
 

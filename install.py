@@ -3,20 +3,19 @@ import os
 import time
 import sys
 
-# Danh sách các gói cần cài đặt
 packages = [
     "pymobiledevice3", "bpylist2", "rich", "requests", "click"
 ]
 
 
-def update_pip_and_path():
-    current_path = os.getcwd()
-    subprocess.check_call(["curl", "https://bootstrap.pypa.io/get-pip.py", "-o", "get-pip.py"])
-    subprocess.check_call([sys.executable, "get-pip.py"])
+# def update_pip_and_path():
+#     current_path = os.getcwd()
+#     subprocess.check_call(["curl", "https://bootstrap.pypa.io/get-pip.py", "-o", "get-pip.py"])
+#     subprocess.check_call([sys.executable, "get-pip.py"])
 
-    user_home = os.path.expanduser('~')
-    new_path = os.path.join(user_home, 'AppData', 'Local', 'Programs', 'Python', 'Python312', 'Scripts')
-    os.environ['PATH'] += os.pathsep + new_path
+#     user_home = os.path.expanduser('~')
+#     new_path = os.path.join(user_home, 'AppData', 'Local', 'Programs', 'Python', 'Python312', 'Scripts')
+#     os.environ['PATH'] += os.pathsep + new_path
 
 def install_if_missing(package):
     try:
@@ -26,8 +25,8 @@ def install_if_missing(package):
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
         print(f"{package} has been installed.")
 
-def update_system_path(new_path):
-    subprocess.check_call(['setx', 'PATH', f"%PATH%;{new_path}", '/M'])
+# def update_system_path(new_path):
+#     subprocess.check_call(['setx', 'PATH', f"%PATH%;{new_path}", '/M'])
 
 def main():
     # Install necessary libraries
@@ -46,8 +45,8 @@ def main():
         UNDERLINE = '\033[4m'
         END = '\033[0m'
 
-    print(f"{color.BOLD + color.RED}Updating pip and configuring path...{color.END}")
-    update_pip_and_path()
+    # print(f"{color.BOLD + color.RED}Updating pip and configuring path...{color.END}")
+    # update_pip_and_path()
 
     print(f"{color.BOLD + color.RED}Installation complete!{color.END}")
 
