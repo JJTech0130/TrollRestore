@@ -22,7 +22,7 @@ As stated above, this installer supports iOS/iPadOS 15.0 - 16.7 RC (20H18) and 1
 
 Note: All 4 versions of iOS 17.0 are supported: 21A326/21A327/21A329/21A331
 
-It should theoretically support iOS 14, but during our testing, we experienced issues restoring the backup to an iOS 14 device. Therefore, using TrollStore on a device below iOS 15 has been disabled for the time being.
+It should theoretically support iOS 14, but during our testing, we experienced issues restoring the backup to an iOS 14 device. Therefore, using TrollRestore on a device below iOS 15 has been disabled for the time being.
 
 # Computer Requirements
 To use the precompiled builds, you will either need:
