@@ -3,8 +3,10 @@ import sys
 import traceback
 from pathlib import Path
 import subprocess
+import importlib
 import os
 
+import click
 import requests
 from packaging.version import parse as parse_version
 from pymobiledevice3.cli.cli_common import Command
@@ -12,19 +14,23 @@ from pymobiledevice3.exceptions import NoDeviceConnectedError, PyMobileDevice3Ex
 from pymobiledevice3.lockdown import LockdownClient
 from pymobiledevice3.services.diagnostics import DiagnosticsService
 from pymobiledevice3.services.installation_proxy import InstallationProxyService
+
 from sparserestore import backup, perform_restore
-import tkinter as tk
-from tkinter import messagebox, filedialog
 
+packages = [
+    "pymobiledevice3", "bpylist2", "rich", "requests", "click"
+]
 
-def exit_app(code=0):
+def exit(code=0):
     if platform.system() == "Windows" and getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         input("Press Enter to exit...")
 
     sys.exit(code)
 
 
-def replace_app(service_provider, app_name):
+@click.command(cls=Command)
+@click.pass_context
+def cli(ctx, service_provider: LockdownClient) -> None:
     os_names = {
         "iPhone": "iOS",
         "iPad": "iPadOS",
@@ -40,7 +46,8 @@ def replace_app(service_provider, app_name):
     device_version = parse_version(service_provider.product_version)
 
     if not all([device_class, device_build, device_version]):
-        messagebox.showerror("Error", "Failed to get device information! Make sure your device is connected and try again.")
+        click.secho("Failed to get device information!", fg="red")
+        click.secho("Make sure your device is connected and try again.", fg="red")
         return
 
     os_name = (os_names[device_class] + " ") if device_class in os_names else ""
@@ -51,13 +58,20 @@ def replace_app(service_provider, app_name):
         or device_version == parse_version("16.7")
         and device_build != "20H18"  # 16.7 RC
     ):
-        messagebox.showerror(
-            "Error", f"{os_name}{device_version} ({device_build}) is not supported.\nThis tool is only compatible with iOS/iPadOS 15.0 - 16.7 RC and 17.0."
-        )
+        click.secho(f"{os_name}{device_version} ({device_build}) is not supported.", fg="red")
+        click.secho("This tool is only compatible with iOS/iPadOS 15.0 - 16.7 RC and 17.0.", fg="red")
         return
 
-    if not app_name.endswith(".app"):
-        app_name += ".app"
+    app = click.prompt(
+        """
+Please specify the removable system app you want to replace with TrollStore Helper.
+If you don't know which app to specify, specify the Tips app.
+
+Enter the app name"""
+    )
+
+    if not app.endswith(".app"):
+        app += ".app"
 
     apps_json = InstallationProxyService(service_provider).get_apps(application_type="System", calculate_sizes=False)
 
@@ -65,15 +79,17 @@ def replace_app(service_provider, app_name):
     for key, value in apps_json.items():
         if isinstance(value, dict) and "Path" in value:
             potential_path = Path(value["Path"])
-            if potential_path.name.lower() == app_name.lower():
+            if potential_path.name.lower() == app.lower():
                 app_path = potential_path
-                app_name = app_path.name
+                app = app_path.name
 
     if not app_path:
-        messagebox.showerror("Error", f"Failed to find the removable system app '{app_name}'! Make sure the app is installed.")
+        click.secho(f"Failed to find the removable system app '{app}'!", fg="red")
+        click.secho(f"Make sure you typed the app name correctly, and that the system app '{app}' is installed to your device.", fg="red")
         return
     elif Path("/private/var/containers/Bundle/Application") not in app_path.parents:
-        messagebox.showerror("Error", f"'{app_name}' is not a removable system app! Please choose a removable system app.")
+        click.secho(f"'{app}' is not a removable system app!", fg="red")
+        click.secho("Please choose a removable system app. These will be Apple-made apps that can be deleted and re-downloaded.", fg="red")
         return
 
     app_uuid = app_path.parent.name
@@ -83,8 +99,9 @@ def replace_app(service_provider, app_name):
         response.raise_for_status()
         helper_contents = response.content
     except Exception as e:
-        messagebox.showerror("Error", f"Failed to download TrollStore Helper: {e}")
+        click.secho(f"Failed to download TrollStore Helper: {e}", fg="red")
         return
+    click.secho(f"Replacing {app} with TrollStore Helper. (UUID: {app_uuid})", fg="yellow")
 
     back = backup.Backup(
         files=[
@@ -94,13 +111,13 @@ def replace_app(service_provider, app_name):
             backup.ConcreteFile("Library/Preferences/temp", "RootDomain", owner=33, group=33, contents=helper_contents, inode=0),
             backup.Directory(
                 "",
-                f"SysContainerDomain-../../../../../../../../var/backup/var/containers/Bundle/Application/{app_uuid}/{app_name}",
+                f"SysContainerDomain-../../../../../../../../var/backup/var/containers/Bundle/Application/{app_uuid}/{app}",
                 owner=33,
                 group=33,
             ),
             backup.ConcreteFile(
                 "",
-                f"SysContainerDomain-../../../../../../../../var/backup/var/containers/Bundle/Application/{app_uuid}/{app_name}/{app_name.split('.')[0]}",
+                f"SysContainerDomain-../../../../../../../../var/backup/var/containers/Bundle/Application/{app_uuid}/{app}/{app.split('.')[0]}",
                 owner=33,
                 group=33,
                 contents=b"",
@@ -108,7 +125,12 @@ def replace_app(service_provider, app_name):
             ),
             backup.ConcreteFile(
                 "",
-                "SysContainerDomain-../../../../../../../.." + "/crash_on_purpose", contents=b""),
+                "SysContainerDomain-../../../../../../../../var/.backup.i/var/root/Library/Preferences/temp",
+                owner=501,
+                group=501,
+                contents=b"",
+            ),  # Break the hard link
+            backup.ConcreteFile("", "SysContainerDomain-../../../../../../../.." + "/crash_on_purpose", contents=b""),
         ]
     )
 
@@ -116,62 +138,69 @@ def replace_app(service_provider, app_name):
         perform_restore(back, reboot=False)
     except PyMobileDevice3Exception as e:
         if "Find My" in str(e):
-            messagebox.showerror("Error", "Find My must be disabled in order to use this tool. Disable Find My and try again.")
-            exit_app(1)
+            click.secho("Find My must be disabled in order to use this tool.", fg="red")
+            click.secho("Disable Find My from Settings (Settings -> [Your Name] -> Find My) and then try again.", fg="red")
+            exit(1)
         elif "crash_on_purpose" not in str(e):
             raise e
 
-    messagebox.showinfo("Info", "Rebooting device...")
+    click.secho("Rebooting device", fg="green")
 
     with DiagnosticsService(service_provider) as diagnostics_service:
         diagnostics_service.restart()
 
-    messagebox.showinfo("Info", "Make sure to turn Find My iPhone back on after rebooting, and install a proper persistence helper after installing TrollStore!")
+    click.secho("Make sure you turn Find My iPhone back on if you use it after rebooting.", fg="green")
+    click.secho("Make sure to install a proper persistence helper into the app you chose after installing TrollStore!\n", fg="green")
 
 
-def on_replace_app():
+
+
+
+def install_if_missing(package):
     try:
-        service_provider = LockdownClient()  # Connect to the device
-        app_name = app_entry.get()
-        if not app_name:
-            messagebox.showwarning("Warning", "Please enter the name of the app.")
-            return
-        replace_app(service_provider, app_name)
-    except NoDeviceConnectedError:
-        messagebox.showerror("Error", "No device connected! Please connect your device and try again.")
-        exit_app(1)
-    except Exception:
-        messagebox.showerror("Error", "An error occurred!\n" + traceback.format_exc())
-        exit_app(1)
+        importlib.import_module(package)
+        print(f"{package} is already installed.")
+    except ImportError:
+        print(f"Installing {package}...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        print(f"{package} has been installed.")
 
 
-def install_libraries():
-    try:
-        subprocess.run([sys.executable, "install.py"], check=True)
-        messagebox.showinfo("Success", "Libraries installed successfully. The application will now restart.")
+def check_and_install_dependencies():
+    missing_packages = []
+    for package in packages:
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            missing_packages.append(package)
+    
+    if missing_packages:
+        print("Installing missing libraries...")
+        for package in missing_packages:
+            install_if_missing(package)
+        print("Installation complete. Restarting the application...")
         python = sys.executable
         os.execl(python, python, *sys.argv)
-    except subprocess.CalledProcessError:
-        messagebox.showerror("Error", "Failed to install libraries. Please try again.")
 
 
 def main():
-    root = tk.Tk()
-    root.title("TrollRestore")
+    try:
+        check_and_install_dependencies()
+        cli(standalone_mode=False)
+    except NoDeviceConnectedError:
+        click.secho("No device connected!", fg="red")
+        click.secho("Please connect your device and try again.", fg="red")
+        exit(1)
+    except click.UsageError as e:
+        click.secho(e.format_message(), fg="red")
+        click.echo(cli.get_help(click.Context(cli)))
+        exit(2)
+    except Exception:
+        click.secho("An error occurred!", fg="red")
+        click.secho(traceback.format_exc(), fg="red")
+        exit(1)
 
-    tk.Label(root, text="Enter the app name to replace with TrollStore Helper:").pack(pady=10)
-    global app_entry
-    app_entry = tk.Entry(root, width=50)
-    app_entry.pack(pady=5)
-
-    replace_button = tk.Button(root, text="Install TrollStore", command=on_replace_app)
-    replace_button.pack(pady=10)
-
-    install_lib_button = tk.Button(root, text="Install lib", command=install_libraries)
-    install_lib_button.pack(pady=10)
-
-    root.mainloop()
-
+    exit(0)
 
 if __name__ == "__main__":
     main()
