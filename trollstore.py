@@ -158,47 +158,49 @@ Enter the app name"""
 
 def install_if_missing(package):
     try:
-        service_provider = LockdownClient()  # Connect to the device
-        app_name = app_entry.get()
-        if not app_name:
-            messagebox.showwarning("Warning", "Please enter the name of the app.")
-            return
-        replace_app(service_provider, app_name)
-    except NoDeviceConnectedError:
-        messagebox.showerror("Error", "No device connected! Please connect your device and try again.")
-        exit_app(1)
-    except Exception:
-        messagebox.showerror("Error", "An error occurred!\n" + traceback.format_exc())
-        exit_app(1)
+        importlib.import_module(package)
+        print(f"{package} is already installed.")
+    except ImportError:
+        print(f"Installing {package}...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        print(f"{package} has been installed.")
 
 
-def install_libraries():
-    try:
-        subprocess.run([sys.executable, "install.py"], check=True)
-        messagebox.showinfo("Success", "Libraries installed successfully. The application will now restart.")
+def check_and_install_dependencies():
+    missing_packages = []
+    for package in packages:
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            missing_packages.append(package)
+    
+    if missing_packages:
+        print("Installing missing libraries...")
+        for package in missing_packages:
+            install_if_missing(package)
+        print("Installation complete. Restarting the application...")
         python = sys.executable
         os.execl(python, python, *sys.argv)
-    except subprocess.CalledProcessError:
-        messagebox.showerror("Error", "Failed to install libraries. Please try again.")
 
 
 def main():
-    root = tk.Tk()
-    root.title("TrollRestore")
+    try:
+        check_and_install_dependencies()
+        cli(standalone_mode=False)
+    except NoDeviceConnectedError:
+        click.secho("No device connected!", fg="red")
+        click.secho("Please connect your device and try again.", fg="red")
+        exit(1)
+    except click.UsageError as e:
+        click.secho(e.format_message(), fg="red")
+        click.echo(cli.get_help(click.Context(cli)))
+        exit(2)
+    except Exception:
+        click.secho("An error occurred!", fg="red")
+        click.secho(traceback.format_exc(), fg="red")
+        exit(1)
 
-    tk.Label(root, text="Enter the app name to replace with TrollStore Helper:").pack(pady=10)
-    global app_entry
-    app_entry = tk.Entry(root, width=50)
-    app_entry.pack(pady=5)
-
-    replace_button = tk.Button(root, text="Install TrollStore", command=on_replace_app)
-    replace_button.pack(pady=10)
-
-    install_lib_button = tk.Button(root, text="Install lib", command=install_libraries)
-    install_lib_button.pack(pady=10)
-
-    root.mainloop()
-
+    exit(0)
 
 if __name__ == "__main__":
     main()
