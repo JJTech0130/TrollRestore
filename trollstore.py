@@ -2,6 +2,27 @@ import platform
 import sys
 import traceback
 from pathlib import Path
+import subprocess
+import importlib
+import os
+
+# List of required libraries
+required_packages = [
+    "click", "requests", "rich", "pymobiledevice3", "bpylist2"
+]
+
+def install_package(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    print(f"Installed {package}")
+
+def check_and_install_packages():
+    for package in required_packages:
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            install_package(package)
+
+check_and_install_packages()
 
 import click
 import requests
@@ -14,6 +35,9 @@ from pymobiledevice3.services.installation_proxy import InstallationProxyService
 
 from sparserestore import backup, perform_restore
 
+packages = [
+    "pymobiledevice3", "bpylist2", "rich", "requests", "click"
+]
 
 def exit(code=0):
     if platform.system() == "Windows" and getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
@@ -164,7 +188,6 @@ def main():
         exit(1)
 
     exit(0)
-
 
 if __name__ == "__main__":
     main()

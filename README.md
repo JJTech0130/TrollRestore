@@ -9,6 +9,10 @@ To run the script, clone this repository and run the following commands:
 pip install -r requirements.txt
 python3 trollstore.py [system app]
 ```
+Or if you can't run script `pip install -r requirements.txt`. You can use `install.py`
+```sh
+py install.py
+```
 If you're unsure about which app to use, just use Tips, like so:
 ```
 python3 trollstore.py Tips
