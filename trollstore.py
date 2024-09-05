@@ -6,6 +6,24 @@ import subprocess
 import importlib
 import os
 
+# List of required libraries
+required_packages = [
+    "click", "requests", "rich", "pymobiledevice3", "bpylist2"
+]
+
+def install_package(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    print(f"Installed {package}")
+
+def check_and_install_packages():
+    for package in required_packages:
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            install_package(package)
+
+check_and_install_packages()
+
 import click
 import requests
 from packaging.version import parse as parse_version
@@ -153,39 +171,8 @@ Enter the app name"""
     click.secho("Make sure to install a proper persistence helper into the app you chose after installing TrollStore!\n", fg="green")
 
 
-
-
-
-def install_if_missing(package):
-    try:
-        importlib.import_module(package)
-        print(f"{package} is already installed.")
-    except ImportError:
-        print(f"Installing {package}...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-        print(f"{package} has been installed.")
-
-
-def check_and_install_dependencies():
-    missing_packages = []
-    for package in packages:
-        try:
-            importlib.import_module(package)
-        except ImportError:
-            missing_packages.append(package)
-    
-    if missing_packages:
-        print("Installing missing libraries...")
-        for package in missing_packages:
-            install_if_missing(package)
-        print("Installation complete. Restarting the application...")
-        python = sys.executable
-        os.execl(python, python, *sys.argv)
-
-
 def main():
     try:
-        check_and_install_dependencies()
         cli(standalone_mode=False)
     except NoDeviceConnectedError:
         click.secho("No device connected!", fg="red")
