@@ -7,11 +7,7 @@ A guide for installing TrollStore using TrollRestore can be found [here](https:/
 To run the script, clone this repository and run the following commands:
 ```sh
 pip install -r requirements.txt
-python3 trollstore.py [system app]
-```
-If you're unsure about which app to use, just use Tips, like so:
-```
-python3 trollstore.py Tips
+python3 trollstore.py
 ```
 
 # Post-installation
