@@ -1,3 +1,4 @@
+import hashlib
 from dataclasses import dataclass
 from datetime import datetime
 import plistlib
@@ -35,11 +36,9 @@ class ConcreteFile(BackupFile):
             domain=self.domain,
             filename=self.path,
             link="",
-            hash=sha1(self.contents).digest(),
+            hash = hashlib.sha256(self.contents).digest(),
             key=b"",
             mode=self.mode | _FileMode.S_IFREG,
-            #unknown2=0,
-            #unknown3=0,
             inode=self.inode,
             user_id=self.owner,
             group_id=self.group,
@@ -116,13 +115,11 @@ class Backup:
     def write_to_directory(self, directory: Path):
         for file in self.files:
             if isinstance(file, ConcreteFile):
-                #print("Writing", file.path, "to", directory / sha1((file.domain + "-" + file.path).encode()).digest().hex())
-                with open(directory / sha1((file.domain + "-" + file.path).encode()).digest().hex(), "wb") as f:
+                hashed_name = hashlib.sha256((file.domain + "-" + file.path).encode()).hexdigest()
+                with open(directory / hashed_name, "wb") as f:
                     f.write(file.contents)
-            
         with open(directory / "Manifest.mbdb", "wb") as f:
             f.write(self.generate_manifest_db().to_bytes())
-
         with open(directory / "Status.plist", "wb") as f:
             f.write(self.generate_status())
         
