@@ -10,10 +10,9 @@ site_packages_path = site.getsitepackages()[0]
 datas = []
 datas += copy_metadata('readchar')
 
-
 block_cipher = None
 
-# if windows
+# Determine the appropriate binaries based on the operating system
 binaries = []
 if platform.system() == 'Windows':
     binaries += [(f"{Path(pytun_pmd3.__file__).parent}/wintun/*", "pytun_pmd3/wintun/bin")]
