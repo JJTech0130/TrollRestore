@@ -4,11 +4,32 @@ TrollRestore is a TrollStore installer for iOS/iPadOS 15.2 - 16.7 RC (20H18) and
 A guide for installing TrollStore using TrollRestore can be found [here](https://ios.cfw.guide/installing-trollstore-trollrestore).
 
 # Usage
+
 To run the script, clone this repository and run the following commands:
+
 ```sh
+python3.12 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 python3 trollstore.py
 ```
+
+On Windows PowerShell:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python trollstore.py
+```
+
+## Specific Attention
+
+* **Please use a fixed Python version. Python 3.12.3 is preferred.**
+* **Do NOT use modern environment/package managers such as `uv` or `conda`.**
+* **Please use the standard Python `.venv` workflow with `pip` to avoid dependency and build compatibility issues.**
+* **The dependency versions in `requirements.txt` are pinned for reproducible builds.**
+
 
 # Post-installation
 TrollRestore does not restore a proper persistence helper - it simply replaces the main binary of a system app with an embedded TrollHelper. Thus, after installing TrollStore, it is recommended to install a persistence helper (you can use the same app used with TrollRestore as your persistence helper). Due to the nature of the installer (and its use of backups), the only way to restore your chosen app to it's original state is to delete it and re-install the app from the App Store.
