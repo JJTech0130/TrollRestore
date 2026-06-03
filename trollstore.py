@@ -1,3 +1,11 @@
+# This Part is for avoiding uncessary warnings in windows.
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message=r".*unknown terminal capability.*",
+    category=UserWarning,
+)
+
 import platform
 import sys
 import traceback
