@@ -10,6 +10,8 @@ pip install -r requirements.txt
 python3 trollstore.py
 ```
 
+**Please use a fixed version of python. Python 3.12.3 is preferred.**
+
 # Post-installation
 TrollRestore does not restore a proper persistence helper - it simply replaces the main binary of a system app with an embedded TrollHelper. Thus, after installing TrollStore, it is recommended to install a persistence helper (you can use the same app used with TrollRestore as your persistence helper). Due to the nature of the installer (and its use of backups), the only way to restore your chosen app to it's original state is to delete it and re-install the app from the App Store.
 
