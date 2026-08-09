@@ -3,6 +3,8 @@ TrollRestore is a TrollStore installer for iOS/iPadOS 15.2 - 16.7 RC (20H18) and
 
 A guide for installing TrollStore using TrollRestore can be found [here](https://ios.cfw.guide/installing-trollstore-trollrestore).
 
+Requires Python 3.12
+
 # Usage
 To run the script, clone this repository and run the following commands:
 ```sh
