@@ -1,5 +1,6 @@
-pymobiledevice3
+pymobiledevice3<=6.2.0
 bpylist2
 rich
 requests
 click
+construct-typing<=0.7.0
