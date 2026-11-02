@@ -3,3 +3,4 @@ bpylist2
 rich
 requests
 click
+construct-typing<=0.7.0
